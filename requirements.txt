@@ -1,0 +1,9 @@
+torch
+transformers
+datasets
+scikit-learn
+xgboost
+pandas
+gradio
+tqdm
+langdetect
