@@ -5,9 +5,9 @@ from tqdm import tqdm
 import torch
 import os
 
-# --- NEW, FAST CONFIGURATION ---
-NUM_SAMPLES_PER_LANG = 3500
-TOTAL_ENGLISH_SAMPLES = 10000
+# --- 50K SAMPLE CONFIGURATION ---
+NUM_SAMPLES_PER_LANG = 1500
+TOTAL_ENGLISH_SAMPLES = 2500
 
 # --- 1. Load Local Generator Models ---
 print("Loading local text generation models...")
@@ -22,21 +22,43 @@ if not os.path.exists(distilgpt2_path):
     print("Please run the 'model_architect.py' script first to download the models.")
     exit()
 
-# Load ONLY the fast generator
 generator_gpt2 = pipeline('text-generation', model=distilgpt2_path, device=device)
+
+if generator_gpt2.tokenizer.pad_token is None:
+    generator_gpt2.tokenizer.pad_token = generator_gpt2.tokenizer.eos_token
+generator_gpt2.model.config.pad_token_id = generator_gpt2.tokenizer.pad_token_id
 
 print("Models loaded successfully.")
 
-# --- SIMPLIFIED & OPTIMIZED Helper function for text generation ---
+# --- BULLETPROOF Helper function for text generation ---
 def generate_ai_text(prompts):
-    """Generates AI text using only the fast DistilGPT-2 model with batching."""
+    """
+    Generates AI text using a robust method that manually truncates prompts
+    to prevent any oversized inputs from reaching the GPU.
+    """
     ai_responses = []
-    batch_size = 16 # We can use a larger batch size with the smaller model
+    batch_size = 16
+    # Get the model's max length (usually 1024 for GPT-2)
+    max_length = generator_gpt2.tokenizer.model_max_length
 
     print(f"Generating {len(prompts)} samples with DistilGPT-2 (in batches of {batch_size})...")
     for i in tqdm(range(0, len(prompts), batch_size), desc="Fast Generation"):
         batch = prompts[i:i + batch_size]
-        responses = generator_gpt2(batch, max_new_tokens=100, num_return_sequences=1, pad_token_id=50256)
+        
+        # --- THE BULLETPROOF FIX ---
+        # 1. Tokenize the batch manually.
+        # 2. Force truncation to the model's max length.
+        # 3. Decode back to text. This guarantees the prompt is safe.
+        inputs = generator_gpt2.tokenizer(batch, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
+        safe_batch = generator_gpt2.tokenizer.batch_decode(inputs['input_ids'], skip_special_tokens=True)
+        # --- END OF FIX ---
+
+        responses = generator_gpt2(
+            safe_batch, 
+            max_new_tokens=100, 
+            num_return_sequences=1
+        )
+        
         for response_list in responses:
             ai_responses.append(response_list[0]['generated_text'])
             
@@ -114,8 +136,8 @@ df_final = df_final[df_final['text'].str.len() > 50]
 
 df_final = df_final.sample(frac=1).reset_index(drop=True)
 
-df_final.to_csv("polydetect_dataset_fast.csv", index=False)
+df_final.to_csv("polydetect_dataset_50k.csv", index=False)
 
 print("\n--- DATA CURATION COMPLETE ---")
-print(f"Final dataset saved to 'polydetect_dataset_fast.csv'")
+print(f"Final dataset saved to 'polydetect_dataset_50k.csv'")
 print(f"Total samples in final dataset: {len(df_final)}")
