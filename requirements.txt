@@ -1,25 +1,47 @@
-# Core ML libraries
-torch>=2.7.0   # will install CPU version if CUDA version isn't compatible
-transformers>=4.56.0
-huggingface_hub>=0.35.0
-datasets>=2.15.0
+# -------------------------------
+# Core ML + Transformers
+# -------------------------------
+torch               # Installed separately w/ CUDA 11.8
+torchvision         
+transformers
+huggingface_hub
 
-# Data processing
-numpy>=1.25.0
-pandas>=2.1.1
+# -------------------------------
+# Tokenizers / HF Dependencies
+# -------------------------------
+sentencepiece            # required for XLM-R, MiniLM, mBERT, DistilBERT
+protobuf                 # HF uses it internally
+safetensors              # avoids pickle for HF models
+
+# -------------------------------
+# Classical ML
+# -------------------------------
+scikit-learn
+xgboost                  # GPU acceleration auto-enabled if CUDA available
+joblib
+
+# -------------------------------
+# Data + Utilities
+# -------------------------------
+numpy
+pandas
+tqdm
+requests
+
+# -------------------------------
+# Visualization
+# -------------------------------
 matplotlib
-wordcloud
-seaborn
-langdetect
-scikit-learn>=1.3.0
-joblib>=1.3.1
+plotly
 
-# App interface
+# -------------------------------
+# Streamlit App
+# -------------------------------
 streamlit
 
-# Utilities
-tqdm>=4.67.1
-pyyaml>=6.0.2
-requests>=2.32.0
-packaging>=25.0
-fsspec>=2024.6.1
+# -------------------------------
+# Optional but recommended
+# -------------------------------
+pyyaml
+fsspec
+packaging
